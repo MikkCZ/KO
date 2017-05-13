@@ -4,6 +4,7 @@ import coco.threshhold.Person;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
@@ -11,11 +12,13 @@ public class ByOrderRunnable implements Runnable {
 
     private final ConcurrentMap<Integer, String> resultMap;
     private final Person[] persons;
+    private final Comparator<Person> personComparator;
     private final boolean reorderInEachStep;
 
-    public ByOrderRunnable(ConcurrentMap<Integer, String> resultMap, Person[] persons, boolean reorderInEachStep) {
+    public ByOrderRunnable(ConcurrentMap<Integer, String> resultMap, Person[] persons, Comparator<Person> personComparator, boolean reorderInEachStep) {
         this.resultMap = resultMap;
         this.persons = persons;
+        this.personComparator = personComparator;
         this.reorderInEachStep = reorderInEachStep;
     }
 
@@ -25,7 +28,7 @@ public class ByOrderRunnable implements Runnable {
         final StringBuilder sb = new StringBuilder();
 
         // split to those who haven't paid enough (plus) and those, who have overpaid (minus) and get them sorted
-        Person[][] plusMinus = splitToPlusAndMinus(persons);
+        Person[][] plusMinus = splitToPlusAndMinus(persons, personComparator);
         int personsLeft;
         do {
             final Person plusP = plusMinus[0][0];
@@ -36,7 +39,7 @@ public class ByOrderRunnable implements Runnable {
             transactions ++;
             sb.append(String.format("\n%1$s %2$s %3$f", plusP, minusP, transaction));
             if (reorderInEachStep) {
-                plusMinus = splitToPlusAndMinus(persons);
+                plusMinus = splitToPlusAndMinus(persons, personComparator);
                 reverse(plusMinus[1]);
             } else {
                 if (plusP.getBalance() == 0) {
@@ -61,8 +64,8 @@ public class ByOrderRunnable implements Runnable {
         resultMap.computeIfAbsent(transactions, integer -> output);
     }
 
-    private static Person[][] splitToPlusAndMinus(Person[] allPersons) {
-        Arrays.sort(allPersons); // order array descending by balance
+    private static Person[][] splitToPlusAndMinus(Person[] allPersons, Comparator<Person> personComparator) {
+        Arrays.sort(allPersons, personComparator); // order array descending by balance
         if (allPersons[0].getBalance() == 0) {
             return new Person[][] {{},{}};
         }

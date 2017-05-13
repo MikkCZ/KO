@@ -52,8 +52,8 @@ public class CocoThr {
         final ConcurrentMap<Integer, String> resultMap = new ConcurrentHashMap<>(totalRunnables);
 
         final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        executor.execute(new ByOrderRunnable(resultMap, clone(persons), true));
-        executor.execute(new ByOrderRunnable(resultMap, clone(persons), false));
+        executor.execute(new ByOrderRunnable(resultMap, clone(persons), new DescendingBalanceFirstPersonComparator(),true));
+        executor.execute(new ByOrderRunnable(resultMap, clone(persons), new DescendingBalanceFirstPersonComparator(), false));
 
         executor.shutdown();
         while (!executor.isTerminated()) {

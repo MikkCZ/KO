@@ -1,6 +1,6 @@
 package coco.threshhold;
 
-public class Person implements Comparable<Person>, Cloneable {
+public class Person implements Cloneable {
 
     private static final double EPSILON = 10e-14;
 
@@ -52,17 +52,5 @@ public class Person implements Comparable<Person>, Cloneable {
         clone.addBill(this.bills);
         clone.averageIs(this.average);
         return clone;
-    }
-
-    @Override
-    public int compareTo(Person o) { // higher balance (dept) goes before lower
-        final double doubleCompare = -(this.getBalance() - o.getBalance());
-        if (doubleCompare < 0) {
-            return -1;
-        } else if(doubleCompare > 0) {
-            return 1;
-        } else {
-            return (int)doubleCompare;
-        }
     }
 }
