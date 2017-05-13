@@ -27,7 +27,6 @@ public class ByOrderRunnable implements Runnable {
 
         // split to those who haven't paid enough (plus) and those, who have overpaid (minus) and get them sorted
         Person[][] plusMinus = splitToPlusAndMinus(persons, personComparator);
-        int personsLeft;
         do {
             final Person plusP = plusMinus[0][0];
             final Person minusP = plusMinus[1][0];
@@ -50,8 +49,7 @@ public class ByOrderRunnable implements Runnable {
                     plusMinus[1] = newArray;
                 }
             }
-            personsLeft = plusMinus[0].length + plusMinus[1].length;
-        } while(personsLeft > 0);
+        } while(plusMinus[0].length > 0 && plusMinus[1].length > 0);
         // TODO: check for balances matching equally (in + and -)
 
         final String output = ""+transactions+sb.toString();
