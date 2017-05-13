@@ -1,9 +1,9 @@
 package combopt;
 
-import coco.optimal.CocoOpt;
+import coco.threshhold.CocoThr;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        CocoOpt.main(args);
+        CocoThr.main(args);
     }
 }
