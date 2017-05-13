@@ -60,6 +60,10 @@ public class CocoThr {
             executor.execute(new ByOrderRunnable(resultMap, clone(persons), new DescendingBalanceFirstPersonComparator(false),true));
             executor.execute(new ByOrderRunnable(resultMap, clone(persons), new DescendingBalanceFirstPersonComparator(false), false));
         }
+        { // positive before negative -> {100, 10, 100, 0, -100, -10, -100}
+            executor.execute(new ByOrderRunnable(resultMap, clone(persons), new PlusMinusArraySplitPersonComparator(),true));
+            executor.execute(new ByOrderRunnable(resultMap, clone(persons), new PlusMinusArraySplitPersonComparator(), false));
+        }
 
         executor.shutdown();
         while (!executor.isTerminated()) {
