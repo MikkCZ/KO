@@ -3,9 +3,7 @@ package coco.threshhold.runnables;
 import coco.threshhold.Person;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
 public class ByOrderRunnable implements Runnable {
@@ -40,7 +38,6 @@ public class ByOrderRunnable implements Runnable {
             sb.append(String.format("\n%1$s %2$s %3$f", plusP, minusP, transaction));
             if (reorderInEachStep) {
                 plusMinus = splitToPlusAndMinus(persons, personComparator);
-                reverse(plusMinus[1]);
             } else {
                 if (plusP.getBalance() == 0) {
                     Person[] newArray = new Person[plusMinus[0].length-1];
@@ -89,11 +86,5 @@ public class ByOrderRunnable implements Runnable {
         System.arraycopy(allPersons, firstMinusPerson, minus, 0, minusPersons);
 
         return new Person[][] {plus, minus};
-    }
-
-    private static void reverse(Person[] arr) {
-        final List<Person> list = Arrays.asList(arr);
-        Collections.reverse(list);
-        list.toArray(arr);
     }
 }
