@@ -4,7 +4,10 @@ import coco.threshhold.Person;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ByOrderRunnable implements Runnable {
 
@@ -28,29 +31,45 @@ public class ByOrderRunnable implements Runnable {
         // split to those who haven't paid enough (plus) and those, who have overpaid (minus) and get them sorted
         Person[][] plusMinus = splitToPlusAndMinus(persons, personComparator);
         do {
-            final Person plusP = plusMinus[0][0];
-            final Person minusP = plusMinus[1][0];
-            final double transaction = Math.min(plusP.getBalance(), -minusP.getBalance());
-            plusP.sendMoney(transaction);
-            minusP.acceptMoney(transaction);
-            transactions ++;
-            sb.append(String.format("\n%1$s %2$s %3$f", plusP, minusP, transaction));
-            if (reorderInEachStep) {
+            final Map<Double, Person> plusBalances = Arrays.stream(plusMinus[0])
+                    .collect(Collectors.toMap(
+                            Person::getBalance,
+                            Function.identity(),
+                            (person1, person2) -> person1
+                    ));
+            boolean foundPlusMinus = false;
+            for (Person minusP : plusMinus[1]) {
+                if (plusBalances.containsKey(-minusP.getBalance())) {
+                    Person plusP = plusBalances.get(-minusP.getBalance());
+                    doTransaction(plusP, minusP, sb);
+                    transactions++;
+                    foundPlusMinus = true;
+                    break;
+                }
+            }
+            if (foundPlusMinus) {
                 plusMinus = splitToPlusAndMinus(persons, personComparator);
             } else {
-                if (plusP.getBalance() == 0) {
-                    Person[] newArray = new Person[plusMinus[0].length-1];
-                    System.arraycopy(plusMinus[0], 1, newArray, 0, plusMinus[0].length-1);
-                    plusMinus[0] = newArray;
-                }
-                if (minusP.getBalance() == 0) {
-                    Person[] newArray = new Person[plusMinus[1].length-1];
-                    System.arraycopy(plusMinus[1], 1, newArray, 0, plusMinus[1].length-1);
-                    plusMinus[1] = newArray;
+                final Person plusP = plusMinus[0][0];
+                final Person minusP = plusMinus[1][0];
+                doTransaction(plusP, minusP, sb);
+                transactions ++;
+                if (reorderInEachStep) {
+                    plusMinus = splitToPlusAndMinus(persons, personComparator);
+                } else {
+                    if (plusP.getBalance() == 0) {
+                        Person[] newArray = new Person[plusMinus[0].length-1];
+                        System.arraycopy(plusMinus[0], 1, newArray, 0, plusMinus[0].length-1);
+                        plusMinus[0] = newArray;
+                    }
+                    if (minusP.getBalance() == 0) {
+                        Person[] newArray = new Person[plusMinus[1].length-1];
+                        System.arraycopy(plusMinus[1], 1, newArray, 0, plusMinus[1].length-1);
+                        plusMinus[1] = newArray;
+                    }
                 }
             }
         } while(plusMinus[0].length > 0 && plusMinus[1].length > 0);
-        // TODO: check for balances matching equally (in + and -)
 
         final String output = ""+transactions+sb.toString();
         /*synchronized (this) {
@@ -59,7 +78,7 @@ public class ByOrderRunnable implements Runnable {
         resultMap.computeIfAbsent(transactions, integer -> output);
     }
 
-    private static Person[][] splitToPlusAndMinus(Person[] allPersons, Comparator<Person> personComparator) {
+    private Person[][] splitToPlusAndMinus(Person[] allPersons, Comparator<Person> personComparator) {
         Arrays.sort(allPersons, personComparator); // order array descending by balance
         if (allPersons[0].getBalance() == 0) {
             return new Person[][] {{},{}};
@@ -84,5 +103,12 @@ public class ByOrderRunnable implements Runnable {
         System.arraycopy(allPersons, firstMinusPerson, minus, 0, minusPersons);
 
         return new Person[][] {plus, minus};
+    }
+
+    private void doTransaction(Person plusP, Person minusP, StringBuilder sb) {
+        final double transaction = Math.min(plusP.getBalance(), -minusP.getBalance());
+        plusP.sendMoney(transaction);
+        minusP.acceptMoney(transaction);
+        sb.append(String.format("\n%1$s %2$s %3$f", plusP, minusP, transaction));
     }
 }
