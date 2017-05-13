@@ -1,6 +1,6 @@
 package coco.threshhold;
 
-public class Person implements Comparable<Person> {
+public class Person implements Comparable<Person>, Cloneable {
 
     private static final double EPSILON = 10e-14;
 
@@ -41,6 +41,17 @@ public class Person implements Comparable<Person> {
     @Override
     public String toString() {
         return number;
+    }
+
+    @Override
+    public Person clone() {
+        if (moneyAccepted > 0 || moneySent > 0) {
+            throw new IllegalStateException("Cannot clone person with transactions. " + this);
+        }
+        final Person clone = new Person(Integer.parseInt(this.number));
+        clone.addBill(this.bills);
+        clone.averageIs(this.average);
+        return clone;
     }
 
     @Override

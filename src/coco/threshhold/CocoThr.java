@@ -1,9 +1,13 @@
 package coco.threshhold;
 
+import coco.threshhold.runnables.ByOrderRunnable;
+
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CocoThr {
 
@@ -14,7 +18,7 @@ public class CocoThr {
     private static Person[] persons; // sum of bills for each person
     private static double s; // average each person should pay in total
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         // read input
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(args[0]))))) {
@@ -43,68 +47,38 @@ public class CocoThr {
             p.averageIs(s);
         }
 
-        int transactions = 0;
-        final StringBuilder sb = new StringBuilder();
+        // TODO: run more variants of sorting and reordering in parallel
+        final int totalRunnables = 2; // set to size of the number of runnables
+        final ConcurrentMap<Integer, String> resultMap = new ConcurrentHashMap<>(totalRunnables);
 
-        // split to those who haven't paid enough (plus) and those, who have overpaid (minus) and get them sorted
-        Person[][] plusMinus = splitToPlusAndMinus(persons);
-        int personsLeft;
-        do {
-            final Person plusP = plusMinus[0][0];
-            final Person minusP = plusMinus[1][0];
-            final double transaction = Math.min(plusP.getBalance(), -minusP.getBalance());
-            plusP.sendMoney(transaction);
-            minusP.acceptMoney(transaction);
-            transactions ++;
-            sb.append(String.format("\n%1$s %2$s %3$f", plusP, minusP, transaction));
-            plusMinus = splitToPlusAndMinus(persons);
-            reverse(plusMinus[1]);
-            personsLeft = plusMinus[0].length + plusMinus[1].length;
-        } while(personsLeft > 0);
-        // TODO: check for balances matching equally (in + and -)
-        // TODO: reorder after each step (optional)
-        // TODO: run N variants of sorting and reordering in parallel
+        final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        executor.execute(new ByOrderRunnable(resultMap, clone(persons), true));
+        executor.execute(new ByOrderRunnable(resultMap, clone(persons), false));
+
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+            Thread.sleep(10);
+        }
+
+        int best = Integer.MAX_VALUE;
+        for (Map.Entry<Integer, String> entry : resultMap.entrySet()) {
+            if (entry.getKey() < best) {
+                best = entry.getKey();
+            }
+        }
 
         // output
         try(PrintStream output = new PrintStream(new File(args[1]))) {
-            output.print(transactions);
-            output.print(sb.toString());
+            output.print(resultMap.get(best));
         }
     }
 
-    private static Person[][] splitToPlusAndMinus(Person[] allPersons) {
-        Arrays.sort(allPersons); // order array descending by balance
-        if (allPersons[0].getBalance() == 0) {
-            return new Person[][] {{},{}};
+    private static Person[] clone(Person[] origin) {
+        final Person[] clone = new Person[origin.length];
+        for (int i=0; i<origin.length; i++) {
+            clone[i] = origin[i].clone();
         }
-        int i = 0, plusPersons = 0, minusPersons = 0, firstMinusPerson;
-        while (allPersons[i].getBalance() > 0) {
-            i++; plusPersons++;
-        }
-        try {
-            while (!(allPersons[i].getBalance() < 0)) {
-                i++;
-            }
-        } catch (IndexOutOfBoundsException e) {
-            System.out.println();
-        }
-        firstMinusPerson = i;
-        minusPersons = allPersons.length - firstMinusPerson;
-
-        final Person[] plus = new Person[plusPersons];
-        System.arraycopy(allPersons, 0, plus, 0, plusPersons);
-        final Person[] minus = new Person[minusPersons];
-        System.arraycopy(allPersons, firstMinusPerson, minus, 0, minusPersons);
-
-        return new Person[][] {plus, minus};
+        return clone;
     }
-
-    public static void reverse(Person[] arr) {
-        final List<Person> list = Arrays.asList(arr);
-        Collections.reverse(list);
-        list.toArray(arr);
-    }
-
-
 
 }
