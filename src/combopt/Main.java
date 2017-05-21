@@ -1,9 +1,9 @@
 package combopt;
 
-import coco.threshhold.CocoThr;
+import hw3.Hw3;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        CocoThr.main(args);
+        Hw3.main(args);
     }
 }

@@ -70,11 +70,11 @@ public class Hw3 {
         if (pair[0] == 'R' && pair[1] == 'C') {
             return iterationRC(I, sumR, sumC);
         } else if (pair[0] == 'C' && pair[1] == 'R') {
-            return iterationCR(I, sumR, sumC);
+            return iterationCR(I, sumC, sumR);
         } else if (pair[0] == 'R' && pair[1] == 'A') {
             return iterationRA(I, sumR, sumA);
         } else if (pair[0] == 'C' && pair[1] == 'A') {
-            return iterationCA(I, sumC, sumD);
+            return iterationCA(I, sumC, sumA);
         } else if (pair[0] == 'C' && pair[1] == 'D') {
             return iterationCD(I, sumC, sumD);
         } else if (pair[0] == 'A' && pair[1] == 'R') {
@@ -122,7 +122,7 @@ public class Hw3 {
         return I;
     }
 
-    private static boolean[][] iterationCR(boolean[][] I, int[] sumRow, int[] sumCol) throws GRBException {
+    private static boolean[][] iterationCR(boolean[][] I, int[] sumCol, int[] sumRow) throws GRBException {
         return mainDiagonalReflection(iterationRC(mainDiagonalReflection(I), sumCol, sumRow));
     }
 
@@ -232,6 +232,31 @@ public class Hw3 {
         return upsideDown(iterationAD(upsideDown(I), sumDiagD, sumDiagA));
     }
 
+    private static boolean[][] iterationRD(boolean[][] I, int[] sumRow, int[] sumDiag) throws GRBException {
+        final int[][] l = new int[n+diagN][n+diagN]; // all zeros
+
+        final int[][] u = new int[n+diagN][n+diagN]; // fill top right n*diagN
+        final int[][] c = new int[n+diagN][n+diagN]; // ones where I = false
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                u[i][j-i+diagN] = 1;
+                if(!I[i][j]) {
+                    c[i][j-i+diagN] = 1;
+                }
+            }
+        }
+
+        final int[] b = concatArrays(sumRow, minusArray(sumDiag)); // concat sumRow, -sumDiag
+
+        final int[][] f = Mincostflow.mincostflow(l, u, c, b);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                I[i][j] = (f[i][j-i+diagN] == 1);
+            }
+        }
+        return I;
+    }
+
     private static int[] concatArrays(final int[] first, final int[] second) {
         final int[] result = new int[first.length + second.length];
         System.arraycopy(first, 0, result, 0, first.length);
@@ -282,10 +307,10 @@ public class Hw3 {
     }
 
     private static void printI(boolean[][] I) {
-        for (int i=0; i<I.length; i++) {
-            for (int j=0; j<I[i].length; j++) {
-                System.out.print(I[i][j] ? "1" : "0");
-                if (j!= I[i].length-1) {
+        for (boolean[] rowI : I) {
+            for (int j = 0; j < rowI.length; j++) {
+                System.out.print(rowI[j] ? "1" : "0");
+                if (j != rowI.length - 1) {
                     System.out.print(", ");
                 }
             }
