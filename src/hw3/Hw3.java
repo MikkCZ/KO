@@ -3,6 +3,7 @@ package hw3;
 import gurobi.GRBException;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class Hw3 {
 
@@ -82,6 +83,10 @@ public class Hw3 {
             return iterationAC(I, sumA, sumC);
         } else if (pair[0] == 'D' && pair[1] == 'C') {
             return iterationDC(I, sumD, sumC);
+        } else if (pair[0] == 'A' && pair[1] == 'D') {
+            return iterationAD(I, sumA, sumD);
+        } else if (pair[0] == 'D' && pair[1] == 'A') {
+            return iterationDA(I, sumD, sumA);
         } else {
             return I;
         }
@@ -197,6 +202,36 @@ public class Hw3 {
         return turnCounterClockwise(iterationAR(turnClockwise(I), sumDiag, sumCol));
     }
 
+    private static boolean[][] iterationAD(boolean[][] I, int[] sumDiagA, int[] sumDiagD) throws GRBException {
+        final int[][] l = new int[diagN+diagN][diagN+diagN]; // all zeros
+
+        final int[][] u = new int[diagN+diagN][diagN+diagN]; // fill top right diagN*diagN
+        final int[][] c = new int[diagN+diagN][diagN+diagN]; // ones where I = false
+        for(int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                u[n-i+j-1][i+j+diagN] = 1;
+                if (!I[i][j]) {
+                    c[n-i+j-1][i+j+diagN] = 1;
+                }
+            }
+        }
+
+        final int[] b = concatArrays(sumDiagA, minusArray(sumDiagD)); // concat sumDiagA, -sumDiagD
+
+        final int[][] f = Mincostflow.mincostflow(l, u, c, b);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                I[i][j] = (f[n-i+j-1][i+j+diagN] == 1);
+            }
+        }
+
+        return I;
+    }
+
+    private static boolean[][] iterationDA(boolean[][] I, int[] sumDiagD, int[] sumDiagA) throws GRBException {
+        return upsideDown(iterationAD(upsideDown(I), sumDiagD, sumDiagA));
+    }
+
     private static int[] concatArrays(final int[] first, final int[] second) {
         final int[] result = new int[first.length + second.length];
         System.arraycopy(first, 0, result, 0, first.length);
@@ -233,11 +268,17 @@ public class Hw3 {
     }
 
     private static boolean[][] turnClockwise(final boolean[][] original) {
-        boolean[][] turned = original;
-        for (int i=0; i<3; i++) {
-            turned = turnCounterClockwise(turned);
+        return turnCounterClockwise(turnCounterClockwise(turnCounterClockwise(
+                original
+        )));
+    }
+
+    private static boolean[][] upsideDown(final boolean[][] original) {
+        final boolean[][] ud = new boolean[original.length][original.length];
+        for (int i=0; i<original.length; i++) {
+            ud[original.length-1-i] = Arrays.copyOf(original[i], original.length);
         }
-        return turned;
+        return ud;
     }
 
     private static void printI(boolean[][] I) {
