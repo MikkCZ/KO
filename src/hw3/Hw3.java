@@ -72,8 +72,16 @@ public class Hw3 {
             return iterationCR(I, sumR, sumC);
         } else if (pair[0] == 'R' && pair[1] == 'A') {
             return iterationRA(I, sumR, sumA);
+        } else if (pair[0] == 'C' && pair[1] == 'A') {
+            return iterationCA(I, sumC, sumD);
         } else if (pair[0] == 'C' && pair[1] == 'D') {
             return iterationCD(I, sumC, sumD);
+        } else if (pair[0] == 'A' && pair[1] == 'R') {
+            return iterationAR(I, sumA, sumR);
+        } else if (pair[0] == 'A' && pair[1] == 'C') {
+            return iterationAC(I, sumA, sumC);
+        } else if (pair[0] == 'D' && pair[1] == 'C') {
+            return iterationDC(I, sumD, sumC);
         } else {
             return I;
         }
@@ -110,7 +118,7 @@ public class Hw3 {
     }
 
     private static boolean[][] iterationCR(boolean[][] I, int[] sumRow, int[] sumCol) throws GRBException {
-        return diagonalReflection(iterationRC(diagonalReflection(I), sumCol, sumRow));
+        return mainDiagonalReflection(iterationRC(mainDiagonalReflection(I), sumCol, sumRow));
     }
 
     private static boolean[][] iterationRA(boolean[][] I, int[] sumRow, int[] sumDiag) throws GRBException {
@@ -143,8 +151,50 @@ public class Hw3 {
         return I;
     }
 
+    private static boolean[][] iterationCA(boolean[][] I, int[] sumCol, int[] sumDiag) throws GRBException {
+        return mainDiagonalReflection(iterationRA(mainDiagonalReflection(I), sumCol, sumDiag));
+    }
+
     private static boolean[][] iterationCD(boolean[][] I, int[] sumCol, int[] sumDiag) throws GRBException {
-        return turnCounterClockwise(iterationRA(turnCounterClockwise(I), sumCol, sumDiag));
+        return turnCounterClockwise(iterationRA(turnClockwise(I), sumCol, sumDiag));
+    }
+
+    private static boolean[][] iterationAR(boolean[][] I, int[] sumDiag, int[] sumRow) throws GRBException {
+        final int[][] l = new int[diagN+n][diagN+n]; // all zeros
+
+        final int[][] u = new int[diagN+n][diagN+n]; // fill top right diagN*n
+        for (int i=0; i<diagN; i++) {
+            for (int j=Math.max(diagN, diagN-(n-1)+i); j<Math.min(diagN+n, diagN+i+1); j++) {
+                u[i][j] = 1;
+            }
+        }
+
+        final int[][] c = new int[diagN+n][diagN+n]; // ones where I = false
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                if (!I[i][j]) {
+                    c[i+j][diagN+i] = 1;
+                }
+            }
+        }
+
+        final int[] b = concatArrays(sumDiag, minusArray(sumRow)); // concat sumDiag, -sumRow
+
+        final int[][] f = Mincostflow.mincostflow(l, u, c, b);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                I[i][j] = (f[i+j][diagN+i] == 1);
+            }
+        }
+        return I;
+    }
+
+    private static boolean[][] iterationAC(boolean[][] I, int[] sumDiag, int[] sumCol) throws GRBException {
+        return mainDiagonalReflection(iterationAR(mainDiagonalReflection(I), sumDiag, sumCol));
+    }
+
+    private static boolean[][] iterationDC(boolean[][] I, int[] sumDiag, int[] sumCol) throws GRBException {
+        return turnCounterClockwise(iterationAR(turnClockwise(I), sumDiag, sumCol));
     }
 
     private static int[] concatArrays(final int[] first, final int[] second) {
@@ -162,7 +212,7 @@ public class Hw3 {
         return result;
     }
 
-    private static boolean[][] diagonalReflection(final boolean[][] original) {
+    private static boolean[][] mainDiagonalReflection(final boolean[][] original) {
         final boolean[][] reflected = new boolean[original.length][original.length];
         for (int i=0; i<original.length; i++) {
             for (int j=0; j<original.length; j++) {
