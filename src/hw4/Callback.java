@@ -16,7 +16,7 @@ public class Callback extends GRBCallback {
     protected void callback() {
         if (where == GRB.CB_MIPSOL) {
             try {
-                final Collection<int[]> tour = findTour(getSolution(vars));
+                final Collection<int[]> tour = TourFinder.findShortestTour(getSolution(vars));
                 if (tour.size() < vars.length) {
                     GRBLinExpr left = new GRBLinExpr();
                     tour.forEach(e -> left.addTerm(1, vars[e[0]][e[1]]));
@@ -26,9 +26,5 @@ public class Callback extends GRBCallback {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private Collection<int[]> findTour(double[][] solution) {
-        return TourFinder.findTour(solution);
     }
 }
