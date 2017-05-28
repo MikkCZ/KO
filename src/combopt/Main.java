@@ -1,9 +1,9 @@
 package combopt;
 
-import hw4.Hw4;
+import hw5.Hw5;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        Hw4.main(args);
+        Hw5.main(args);
     }
 }

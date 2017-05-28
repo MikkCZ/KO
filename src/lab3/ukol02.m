@@ -50,14 +50,14 @@ end
 function A = seminar3_generateA(hours, shift)
     A = zeros(hours,hours);
     for i=1:hours
-        for j=1:hours
+        for d=1:hours
             if i<=(shift-1)
-                if j<=i || j>=i+(hours-(shift-1))
-                    A(i,j) = 1;
+                if d<=i || d>=i+(hours-(shift-1))
+                    A(i,d) = 1;
                 end
             else
-                if j>=i-(shift-1) && j<=i
-                    A(i,j) = 1;
+                if d>=i-(shift-1) && d<=i
+                    A(i,d) = 1;
                 end
             end
         end
